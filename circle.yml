@@ -1,0 +1,28 @@
+machine:
+  node:
+    version: 6.10.0
+dependencies:
+  pre:
+    - npm install @holidayextras/deployment-helpers
+    - node_modules/@holidayextras/deployment-helpers/nodeApps/preRelease.sh
+test:
+  pre:
+    - mkdir -p $CIRCLE_TEST_REPORTS/unit
+    - mkdir -p $CIRCLE_TEST_REPORTS/coverage
+  override:
+    - npm run lint
+    - npm run ci
+  post:
+    - npm install coverage-percentage
+    - cp -r ./coverage/ $CIRCLE_ARTIFACTS/coverage
+    - echo "$GRAPHITE_API_KEY.counters.$CIRCLE_PROJECT_REPONAME.production.test.coverage `./node_modules/.bin/coverage-percentage ./coverage/lcov.info --lcov`" | nc -uw0 carbon.hostedgraphite.com 2003
+deployment:
+  production:
+    branch: master
+    commands:
+      - node_modules/@holidayextras/deployment-helpers/nodeApps/postRelease.sh production
+experimental:
+  notify:
+    branches:
+      only:
+        - master
